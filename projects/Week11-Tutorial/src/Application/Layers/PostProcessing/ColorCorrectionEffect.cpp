@@ -10,6 +10,8 @@ ColorCorrectionEffect::ColorCorrectionEffect(bool defaultLut) :
 	PostProcessingLayer::Effect(),
 	_shader(nullptr),
 	_strength(1.0f),
+	_choice(0.f),//testing
+	Lut2(nullptr),//testing
 	Lut(nullptr)
 {
 	Name = "Color Correction";
@@ -22,16 +24,32 @@ ColorCorrectionEffect::ColorCorrectionEffect(bool defaultLut) :
 
 	if (defaultLut) {
 		Lut = ResourceManager::CreateAsset<Texture3D>("luts/cool.cube");
+		Lut2 = ResourceManager::CreateAsset<Texture3D>("luts/blood.CUBE");
 	}
 }
 
 ColorCorrectionEffect::~ColorCorrectionEffect() = default;
 
-void ColorCorrectionEffect::Apply(const Framebuffer::Sptr& gBuffer)
+void ColorCorrectionEffect::Apply(const Framebuffer::Sptr & gBuffer)
 {
 	_shader->Bind();
 	Lut->Bind(1);
+	Lut2->Bind(2);
 	_shader->SetUniform("u_Strength", _strength);
+	_shader->SetUniform("u_Choice", _choice);
+}
+
+//Test
+void ColorCorrectionEffect::ChangeStrength(float _newStrength)
+{
+	_strength = _newStrength;
+	_shader->SetUniform("u_Strength", _strength);
+}
+
+void ColorCorrectionEffect::ChangeChoice(float _newChoice)
+{
+	_choice = _newChoice;
+	_shader->SetUniform("u_Choice", _choice);
 }
 
 void ColorCorrectionEffect::RenderImGui()
@@ -40,7 +58,7 @@ void ColorCorrectionEffect::RenderImGui()
 	LABEL_LEFT(ImGui::SliderFloat, "Strength", &_strength, 0, 1);
 }
 
-ColorCorrectionEffect::Sptr ColorCorrectionEffect::FromJson(const nlohmann::json& data)
+ColorCorrectionEffect::Sptr ColorCorrectionEffect::FromJson(const nlohmann::json & data)
 {
 	ColorCorrectionEffect::Sptr result = std::make_shared<ColorCorrectionEffect>(false);
 	result->Enabled = JsonGet(data, "enabled", true);
@@ -53,7 +71,7 @@ nlohmann::json ColorCorrectionEffect::ToJson() const
 {
 	return {
 		{ "enabled", Enabled },
-		{ "lut", Lut != nullptr ? Lut->GetGUID().str() : "null" }, 
+		{ "lut", Lut != nullptr ? Lut->GetGUID().str() : "null" },
 		{ "strength", _strength }
 	};
 }

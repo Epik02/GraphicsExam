@@ -24,8 +24,6 @@ public:
 	ColorCorrectionEffect::Sptr FromJson(const nlohmann::json& data);
 	virtual nlohmann::json ToJson() const override;
 
-	
-
 protected:
 	ShaderProgram::Sptr _shader;
 	float _strength;

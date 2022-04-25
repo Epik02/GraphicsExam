@@ -17,10 +17,10 @@ public:
 
 	OutlineEffect::Sptr FromJson(const nlohmann::json& data);
 	virtual nlohmann::json ToJson() const override;
-
+	glm::vec4           _outlineColor;
 protected:
 	ShaderProgram::Sptr _shader;
-	glm::vec4           _outlineColor;
+	
 	float               _scale;
 	float               _depthThreshold;
 	float               _normalThreshold;

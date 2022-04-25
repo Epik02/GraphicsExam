@@ -35,7 +35,7 @@ void PostProcessingLayer::OnAppLoad(const nlohmann::json& config)
 	_effects.push_back(std::make_shared<OutlineEffect>());
 	_effects.push_back(std::make_shared<DepthOfField>());
 
-	GetEffect<OutlineEffect>()->Enabled = false;
+	GetEffect<OutlineEffect>()->Enabled = true;
 
 	Application& app = Application::Get();
 	const glm::uvec4& viewport = app.GetPrimaryViewport();

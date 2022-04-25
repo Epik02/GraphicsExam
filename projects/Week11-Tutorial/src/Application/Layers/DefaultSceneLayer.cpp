@@ -139,13 +139,16 @@ void DefaultSceneLayer::_CreateScene()
 
 		// Load in the meshes
 		MeshResource::Sptr monkeyMesh = ResourceManager::CreateAsset<MeshResource>("Monkey.obj");
-		MeshResource::Sptr shipMesh   = ResourceManager::CreateAsset<MeshResource>("fenrir.obj");
+		MeshResource::Sptr shipMesh = ResourceManager::CreateAsset<MeshResource>("fenrir.obj");
+		MeshResource::Sptr linkMesh = ResourceManager::CreateAsset<MeshResource>("linkModel.obj");
+		MeshResource::Sptr knightMesh   = ResourceManager::CreateAsset<MeshResource>("knightModel.obj");
 
 		// Load in some textures
 		Texture2D::Sptr    boxTexture   = ResourceManager::CreateAsset<Texture2D>("textures/box-diffuse.png");
 		Texture2D::Sptr    boxSpec      = ResourceManager::CreateAsset<Texture2D>("textures/box-specular.png");
 		Texture2D::Sptr    monkeyTex    = ResourceManager::CreateAsset<Texture2D>("textures/monkey-uvMap.png");
-		Texture2D::Sptr    leafTex      = ResourceManager::CreateAsset<Texture2D>("textures/leaves.png");
+		Texture2D::Sptr    leafTex = ResourceManager::CreateAsset<Texture2D>("textures/leaves.png");
+		
 		leafTex->SetMinFilter(MinFilter::Nearest);
 		leafTex->SetMagFilter(MagFilter::Nearest);
 
@@ -294,6 +297,26 @@ void DefaultSceneLayer::_CreateScene()
 			polka->Set("u_Material.EmissiveMap", ResourceManager::CreateAsset<Texture2D>("textures/polka.png"));
 		}
 
+		Material::Sptr linkMaterial = ResourceManager::CreateAsset<Material>(deferredForward);
+		{
+			Texture2D::Sptr    linkTex = ResourceManager::CreateAsset<Texture2D>("textures/linkTex.png");
+			linkMaterial->Name = "LinkMaterial";
+			linkMaterial->Set("u_Material.AlbedoMap", linkTex);
+			linkMaterial->Set("u_Material.Specular", linkTex);
+			linkMaterial->Set("u_Material.NormalMap", linkTex);
+			linkMaterial->Set("u_Material.EmissiveMap", linkTex);
+		}
+
+		Material::Sptr knightMaterial = ResourceManager::CreateAsset<Material>(deferredForward);
+		{
+			Texture2D::Sptr    knightTex = ResourceManager::CreateAsset<Texture2D>("textures/knightTex.png");
+			knightMaterial->Name = "KnightMaterial";
+			knightMaterial->Set("u_Material.AlbedoMap", knightTex);
+			knightMaterial->Set("u_Material.Specular", knightTex);
+			knightMaterial->Set("u_Material.NormalMap", knightTex);
+			knightMaterial->Set("u_Material.EmissiveMap", knightTex);
+		}
+
 		Material::Sptr whiteBrick = ResourceManager::CreateAsset<Material>(deferredForward);
 		{
 			whiteBrick->Name = "White Bricks";
@@ -354,8 +377,8 @@ void DefaultSceneLayer::_CreateScene()
 		// Set up the scene's camera
 		GameObject::Sptr camera = scene->MainCamera->GetGameObject()->SelfRef();
 		{
-			camera->SetPostion({ -6, -1, 15 });
-			camera->LookAt(glm::vec3(0.0f));
+			camera->SetPostion({ -5.6, -5.9, 6.8 });
+			camera->LookAt(glm::vec3(49.5f, 0.f, -21.f));
 
 			camera->Add<SimpleCameraControl>();
 
@@ -401,55 +424,47 @@ void DefaultSceneLayer::_CreateScene()
 			wall2->SetScale(glm::vec3(20.0f, 1.0f, 3.0f));
 			wall2->SetPostion(glm::vec3(0.0f, -10.0f, 1.5f));
 			plane->AddChild(wall2);
-
-			GameObject::Sptr wall3 = scene->CreateGameObject("Wall3");
-			wall3->Add<RenderComponent>()->SetMesh(wall)->SetMaterial(whiteBrick);
-			wall3->SetScale(glm::vec3(1.0f, 20.0f, 3.0f));
-			wall3->SetPostion(glm::vec3(10.0f, 0.0f, 1.5f));
-			plane->AddChild(wall3);
-
-			GameObject::Sptr wall4 = scene->CreateGameObject("Wall4");
-			wall4->Add<RenderComponent>()->SetMesh(wall)->SetMaterial(whiteBrick);
-			wall4->SetScale(glm::vec3(1.0f, 20.0f, 3.0f));
-			wall4->SetPostion(glm::vec3(-10.0f, 0.0f, 1.5f));
-			plane->AddChild(wall4);
 		}
 
-		GameObject::Sptr monkey1 = scene->CreateGameObject("Monkey 1");
+		
+
+		
+
+		GameObject::Sptr demoBase = scene->CreateGameObject("Demo Parent");
+
+		GameObject::Sptr mainCharacter = scene->CreateGameObject("Main Character");
 		{
-			// Set position in the scene
-			monkey1->SetPostion(glm::vec3(1.5f, 0.0f, 1.0f));
+			/*MeshResource::Sptr boxMesh = ResourceManager::CreateAsset<MeshResource>();
+			boxMesh->AddParam(MeshBuilderParam::CreateCube(ZERO, ONE));
+			boxMesh->GenerateMesh();*/
 
-			// Add some behaviour that relies on the physics body
-			monkey1->Add<JumpBehaviour>();
+			// Set and rotation position in the scene
+			mainCharacter->SetPostion(glm::vec3(-4.f, -2.f, 1.0f));
+			mainCharacter->SetScale(glm::vec3(0.3f));
+			 
+			// Add a render component
+			RenderComponent::Sptr renderer = mainCharacter->Add<RenderComponent>();
+			renderer->SetMesh(linkMesh);
+			renderer->SetMaterial(linkMaterial);
 
-			// Create and attach a renderer for the monkey
-			RenderComponent::Sptr renderer = monkey1->Add<RenderComponent>();
-			renderer->SetMesh(monkeyMesh);
-			renderer->SetMaterial(monkeyMaterial);
+			// Add a dynamic rigid body to this monkey
+			RigidBody::Sptr physics = mainCharacter->Add<RigidBody>(RigidBodyType::Dynamic); //keep as dynamic //kinematic disables jump
+			physics->AddCollider(ConvexMeshCollider::Create());
+
+			//controls character movement including jump
+			JumpBehaviour::Sptr jump = mainCharacter->Add<JumpBehaviour>();
+			demoBase->AddChild(mainCharacter);
 
 			// Example of a trigger that interacts with static and kinematic bodies as well as dynamic bodies
-			TriggerVolume::Sptr trigger = monkey1->Add<TriggerVolume>();
-			trigger->SetFlags(TriggerTypeFlags::Statics | TriggerTypeFlags::Kinematics);
+			TriggerVolume::Sptr trigger = mainCharacter->Add<TriggerVolume>();
+			trigger->SetFlags(TriggerTypeFlags::Dynamics | TriggerTypeFlags::Kinematics);
 			trigger->AddCollider(BoxCollider::Create(glm::vec3(1.0f)));
 
-			monkey1->Add<TriggerVolumeEnterBehaviour>();
-		}
-
-		GameObject::Sptr ship = scene->CreateGameObject("Fenrir");
-		{
-			// Set position in the scene
-			ship->SetPostion(glm::vec3(1.5f, 0.0f, 4.0f));
-			ship->SetScale(glm::vec3(0.1f));
-
-			// Create and attach a renderer for the monkey
-			RenderComponent::Sptr renderer = ship->Add<RenderComponent>();
-			renderer->SetMesh(shipMesh);
-			renderer->SetMaterial(grey);
+			mainCharacter->Add<TriggerVolumeEnterBehaviour>();
 
 			GameObject::Sptr particles = scene->CreateGameObject("Particles");
-			ship->AddChild(particles);
-			particles->SetPostion({ 0.0f, -7.0f, 0.0f});
+			mainCharacter->AddChild(particles);
+			particles->SetPostion(glm::vec3(0, 0.0f, 0.0f));
 
 			ParticleSystem::Sptr particleManager = particles->Add<ParticleSystem>();
 			particleManager->Atlas = particleTex;
@@ -458,7 +473,7 @@ void DefaultSceneLayer::_CreateScene()
 
 			ParticleSystem::ParticleData emitter;
 			emitter.Type = ParticleType::SphereEmitter;
-			emitter.TexID = 2;
+			emitter.TexID = 3; //changes the particles displayed range = [0,3]
 			emitter.Position = glm::vec3(0.0f);
 			emitter.Color = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
 			emitter.Lifetime = 1.0f / 50.0f;
@@ -468,172 +483,72 @@ void DefaultSceneLayer::_CreateScene()
 			emitter.SphereEmitterData.Radius = 0.5f;
 			emitter.SphereEmitterData.SizeRange = { 0.5f, 1.0f };
 
-			ParticleSystem::ParticleData emitter2;
-			emitter2.Type = ParticleType::SphereEmitter;
-			emitter2.TexID = 2;
-			emitter2.Position = glm::vec3(0.0f);
-			emitter2.Color = glm::vec4(1.0f, 0.5f, 0.0f, 1.0f);
-			emitter2.Lifetime = 1.0f / 40.0f;
-			emitter2.SphereEmitterData.Timer = 1.0f / 40.0f;
-			emitter2.SphereEmitterData.Velocity = 0.1f;
-			emitter2.SphereEmitterData.LifeRange = { 0.5f, 1.0f };
-			emitter2.SphereEmitterData.Radius = 0.25f;
-			emitter2.SphereEmitterData.SizeRange = { 0.25f, 0.5f };
-
 			particleManager->AddEmitter(emitter);
-			particleManager->AddEmitter(emitter2);
-
-			ShipMoveBehaviour::Sptr move = ship->Add<ShipMoveBehaviour>();
-			move->Center = glm::vec3(0.0f, 0.0f, 4.0f);
-			move->Speed = 180.0f;
-			move->Radius = 6.0f;
 		}
 
-		GameObject::Sptr demoBase = scene->CreateGameObject("Demo Parent");
-
-		GameObject::Sptr polkaBox = scene->CreateGameObject("Polka Box");
+		GameObject::Sptr enemyCharacter = scene->CreateGameObject("Enemy");
 		{
-			MeshResource::Sptr boxMesh = ResourceManager::CreateAsset<MeshResource>();
+			/*MeshResource::Sptr boxMesh = ResourceManager::CreateAsset<MeshResource>();
 			boxMesh->AddParam(MeshBuilderParam::CreateCube(ZERO, ONE));
-			boxMesh->GenerateMesh();
+			boxMesh->GenerateMesh();*/
 
 			// Set and rotation position in the scene
-			polkaBox->SetPostion(glm::vec3(0, 0.0f, 3.0f));
+			enemyCharacter->SetPostion(glm::vec3(5.0f, 5.0f, 1.0f));
 
 			// Add a render component
-			RenderComponent::Sptr renderer = polkaBox->Add<RenderComponent>();
-			renderer->SetMesh(boxMesh);
-			renderer->SetMaterial(polka);
+			RenderComponent::Sptr renderer = enemyCharacter->Add<RenderComponent>();
+			renderer->SetMesh(knightMesh);
+			renderer->SetMaterial(knightMaterial);
 
-			demoBase->AddChild(polkaBox);
+			// Add a dynamic rigid body to this monkey
+			RigidBody::Sptr physics = enemyCharacter->Add<RigidBody>(RigidBodyType::Dynamic); //might change to kinematic later
+			physics->AddCollider(SphereCollider::Create()); //formerly ConvexMeshCollider
+
+
+
+			RotatingBehaviour::Sptr move2 = enemyCharacter->Add<RotatingBehaviour>();
+
+			demoBase->AddChild(enemyCharacter);
 		}
 
-		// Box to showcase the specular material
-		GameObject::Sptr specBox = scene->CreateGameObject("Specular Object");
+		GameObject::Sptr winScreen = scene->CreateGameObject("Win Screen");
 		{
-			MeshResource::Sptr boxMesh = ResourceManager::CreateAsset<MeshResource>();
-			boxMesh->AddParam(MeshBuilderParam::CreateCube(ZERO, ONE));
-			boxMesh->GenerateMesh();
+			RectTransform::Sptr transform = winScreen->Add<RectTransform>();
+			transform->SetMin({ 200, 148 });
+			transform->SetMax({ 1200, 652 });
+			transform->SetPosition(glm::vec2(700.f, 400.f));
+			GuiPanel::Sptr panel = winScreen->Add<GuiPanel>();
+			panel->SetColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-			// Set and rotation position in the scene
-			specBox->SetPostion(glm::vec3(0, -4.0f, 1.0f));
-
-			// Add a render component
-			RenderComponent::Sptr renderer = specBox->Add<RenderComponent>();
-			renderer->SetMesh(boxMesh);
-			renderer->SetMaterial(testMaterial); 
-
-			demoBase->AddChild(specBox);
+			panel->SetTexture(ResourceManager::CreateAsset<Texture2D>("textures/WinScreen.png"));
+			panel->IsEnabled = false;
 		}
+		demoBase->AddChild(winScreen);
+
+		GameObject::Sptr loseScreen = scene->CreateGameObject("Lose Screen");
+		{
+			RectTransform::Sptr transform = loseScreen->Add<RectTransform>();
+			transform->SetMin({ 200, 148 });
+			transform->SetMax({ 1200, 652 });
+			transform->SetPosition(glm::vec2(700.f, 400.f));
+			GuiPanel::Sptr panel = loseScreen->Add<GuiPanel>();
+			panel->SetColor(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+			panel->SetTexture(ResourceManager::CreateAsset<Texture2D>("textures/LoseScreen.png"));
+			panel->IsEnabled = false;
+		}
+		demoBase->AddChild(loseScreen);
 
 		
 
-		// sphere to showcase the foliage material
-		GameObject::Sptr foliageBall = scene->CreateGameObject("Foliage Sphere");
-		{
-			// Set and rotation position in the scene
-			foliageBall->SetPostion(glm::vec3(-4.0f, -4.0f, 1.0f));
+		
 
-			// Add a render component
-			RenderComponent::Sptr renderer = foliageBall->Add<RenderComponent>();
-			renderer->SetMesh(sphere);
-			renderer->SetMaterial(foliageMaterial);
+		
 
-			demoBase->AddChild(foliageBall);
-		}
+		
+		
 
-		// Box to showcase the foliage material
-		GameObject::Sptr foliageBox = scene->CreateGameObject("Foliage Box");
-		{
-			MeshResource::Sptr box = ResourceManager::CreateAsset<MeshResource>();
-			box->AddParam(MeshBuilderParam::CreateCube(glm::vec3(0, 0, 0.5f), ONE));
-			box->GenerateMesh();
-
-			// Set and rotation position in the scene
-			foliageBox->SetPostion(glm::vec3(-6.0f, -4.0f, 1.0f));
-
-			// Add a render component
-			RenderComponent::Sptr renderer = foliageBox->Add<RenderComponent>();
-			renderer->SetMesh(box);
-			renderer->SetMaterial(foliageMaterial);
-
-			demoBase->AddChild(foliageBox);
-		}
-
-		// Box to showcase the specular material
-		GameObject::Sptr toonBall = scene->CreateGameObject("Toon Object");
-		{
-			// Set and rotation position in the scene
-			toonBall->SetPostion(glm::vec3(-2.0f, -4.0f, 1.0f));
-
-			// Add a render component
-			RenderComponent::Sptr renderer = toonBall->Add<RenderComponent>();
-			renderer->SetMesh(sphere);
-			renderer->SetMaterial(toonMaterial);
-
-			demoBase->AddChild(toonBall);
-		}
-
-		GameObject::Sptr displacementBall = scene->CreateGameObject("Displacement Object");
-		{
-			// Set and rotation position in the scene
-			displacementBall->SetPostion(glm::vec3(2.0f, -4.0f, 1.0f));
-
-			// Add a render component
-			RenderComponent::Sptr renderer = displacementBall->Add<RenderComponent>();
-			renderer->SetMesh(sphere);
-			renderer->SetMaterial(displacementTest);
-
-			demoBase->AddChild(displacementBall);
-		}
-
-		GameObject::Sptr multiTextureBall = scene->CreateGameObject("Multitextured Object");
-		{
-			// Set and rotation position in the scene 
-			multiTextureBall->SetPostion(glm::vec3(4.0f, -4.0f, 1.0f));
-
-			// Add a render component 
-			RenderComponent::Sptr renderer = multiTextureBall->Add<RenderComponent>();
-			renderer->SetMesh(sphere);
-			renderer->SetMaterial(multiTextureMat);
-
-			demoBase->AddChild(multiTextureBall);
-		}
-
-		GameObject::Sptr normalMapBall = scene->CreateGameObject("Normal Mapped Object");
-		{
-			// Set and rotation position in the scene 
-			normalMapBall->SetPostion(glm::vec3(6.0f, -4.0f, 1.0f));
-
-			// Add a render component 
-			RenderComponent::Sptr renderer = normalMapBall->Add<RenderComponent>();
-			renderer->SetMesh(sphere);
-			renderer->SetMaterial(normalmapMat);
-
-			demoBase->AddChild(normalMapBall);
-		}
-
-		// Create a trigger volume for testing how we can detect collisions with objects!
-		GameObject::Sptr trigger = scene->CreateGameObject("Trigger");
-		{
-			TriggerVolume::Sptr volume = trigger->Add<TriggerVolume>();
-			CylinderCollider::Sptr collider = CylinderCollider::Create(glm::vec3(3.0f, 3.0f, 1.0f));
-			collider->SetPosition(glm::vec3(0.0f, 0.0f, 0.5f));
-			volume->AddCollider(collider);
-
-			trigger->Add<TriggerVolumeEnterBehaviour>();
-		}
-
-		GameObject::Sptr shadowCaster = scene->CreateGameObject("Shadow Light");
-		{
-			// Set position in the scene
-			shadowCaster->SetPostion(glm::vec3(3.0f, 3.0f, 5.0f));
-			shadowCaster->LookAt(glm::vec3(0.0f));
-
-			// Create and attach a renderer for the monkey
-			ShadowCamera::Sptr shadowCam = shadowCaster->Add<ShadowCamera>();
-			shadowCam->SetProjection(glm::perspective(glm::radians(120.0f), 1.0f, 0.1f, 100.0f));
-		}
+		
 
 		/////////////////////////// UI //////////////////////////////
 		
@@ -664,35 +579,14 @@ void DefaultSceneLayer::_CreateScene()
 				text->SetText("Hello world!");
 				text->SetFont(font);
 
-				monkey1->Get<JumpBehaviour>()->Panel = text;
+				
 			}
 
 			canvas->AddChild(subPanel);
 		}
 		
 
-		GameObject::Sptr particles = scene->CreateGameObject("Particles"); 
-		{
-			particles->SetPostion({ -2.0f, 0.0f, 2.0f });
-
-			ParticleSystem::Sptr particleManager = particles->Add<ParticleSystem>();  
-			particleManager->Atlas = particleTex;
-
-			ParticleSystem::ParticleData emitter;
-			emitter.Type = ParticleType::SphereEmitter;
-			emitter.TexID = 2;
-			emitter.Position = glm::vec3(0.0f);
-			emitter.Color = glm::vec4(0.5f, 0.5f, 0.5f, 1.0f);
-			emitter.Lifetime = 0.0f;
-			emitter.SphereEmitterData.Timer = 1.0f / 50.0f;
-			emitter.SphereEmitterData.Velocity = 0.5f;
-			emitter.SphereEmitterData.LifeRange = { 1.0f, 4.0f };
-			emitter.SphereEmitterData.Radius = 1.0f;
-			emitter.SphereEmitterData.SizeRange = { 0.5f, 1.5f };
-
-			particleManager->AddEmitter(emitter);
-		}
-
+		
 		GuiBatcher::SetDefaultTexture(ResourceManager::CreateAsset<Texture2D>("textures/ui-sprite.png"));
 		GuiBatcher::SetDefaultBorderRadius(8);
 
