@@ -303,6 +303,12 @@ void Application::_Update() {
 			layer->OnUpdate();
 		}
 	}
+
+	//Game Loop
+	Application& app = Application::Get();
+
+	//Makes Shadow Camera follow an object (z is height)
+	//app.CurrentScene()->FindObjectByName("Shadow Light")->SetPostion(glm::vec3(app.CurrentScene()->FindObjectByName("Main Character")->GetPosition().x, 3, 5));
 }
 
 void Application::_LateUpdate() {

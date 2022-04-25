@@ -63,6 +63,8 @@
 #include "Layers/ParticleLayer.h"
 #include "Layers/PostProcessingLayer.h"
 
+#include "Layers/RenderLayer.h"
+
 Application* Application::_singleton = nullptr;
 std::string Application::_applicationName = "INFR-2350U - DEMO";
 
@@ -296,13 +298,50 @@ void Application::_Load() {
 
 	GuiBatcher::SetWindowSize(_windowSize);
 }
-
+//const Framebuffer::Sptr& lightBuffer = renderLayer->GetLightingBuffer();
 void Application::_Update() {
 	for (const auto& layer : _layers) {
 		if (layer->Enabled && *(layer->Overrides & AppLayerFunctions::OnUpdate)) {
 			layer->OnUpdate();
 		}
 	}
+
+	//Game Loop
+	Application& app = Application::Get();
+
+	//Toggles All Lighting
+	if ((InputEngine::GetKeyState(GLFW_KEY_1) == ButtonState::Down)) {
+		for (int i = 0; i < app.CurrentScene()->FindObjectByName("Lights")->GetChildren().size(); i = i + 1) {
+			app.CurrentScene()->FindObjectByName("Lights")->GetChildren()[i]->Get<Light>()->SetIntensity(0.f);
+		}
+	}
+	else {
+		for (int i = 0; i < app.CurrentScene()->FindObjectByName("Lights")->GetChildren().size(); i = i + 1) {
+			if (i <= 10) {
+				app.CurrentScene()->FindObjectByName("Lights")->GetChildren()[i]->Get<Light>()->SetIntensity(250.f);
+			}
+			else if (i <= 21) {
+				app.CurrentScene()->FindObjectByName("Lights")->GetChildren()[i]->Get<Light>()->SetIntensity(500.f);
+			}
+			else if (i <= 30) {
+				app.CurrentScene()->FindObjectByName("Lights")->GetChildren()[i]->Get<Light>()->SetIntensity(1.f);
+			}
+		}
+	}
+
+	//Toggles Ambient Lights
+	if ((InputEngine::GetKeyState(GLFW_KEY_2) == ButtonState::Down)) {
+		app.CurrentScene()->SetAmbientLight(glm::vec3(0));
+	}
+	else {
+		app.CurrentScene()->SetAmbientLight(glm::vec3(0.1));
+	}
+	//RenderLayer::Sptr& renderLayer = app.GetLayer<RenderLayer>();
+	//const Framebuffer::Sptr& lightBuffer = renderLayer->GetLightingBuffer();
+	//lightBuffer->
+
+	//Makes Shadow Camera follow an object (z is height)
+	app.CurrentScene()->FindObjectByName("Shadow Light")->SetPostion(glm::vec3(app.CurrentScene()->FindObjectByName("Shadow Light")->GetPosition().x, app.CurrentScene()->FindObjectByName("Shadow Light")->GetPosition().y, 20));
 }
 
 void Application::_LateUpdate() {
